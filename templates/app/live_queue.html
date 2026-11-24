@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Live OPD Queue Tracker — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 540px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div>
+      <span class="badge badge-status">Real-Time OPD Tracker</span>
+      <h1 style="font-size: 1.5rem; font-weight: 800; margin-top: 2px;">Live Clinic Queue</h1>
+    </div>
+    <span style="font-size: 0.78rem; color: #16a34a; font-weight: 700;">● Live Recalculating</span>
+  </div>
+
+  <!-- LEAVE NOW ADVISORY BANNER -->
+  <div class="card" style="margin-bottom: 1.25rem; border: 2px solid {% if advisory.urgency == 'immediate' %}#ef4444; background: #fff5f5;{% elif advisory.urgency == 'soon' %}#f59e0b; background: #fffbeb;{% else %}#38bdf8; background: #f0f9ff;{% endif %}">
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <span style="font-size: 1.8rem;">
+        {% if advisory.urgency == 'immediate' %}🚨{% elif advisory.urgency == 'soon' %}🚗{% else %}⏳{% endif %}
+      </span>
+      <div>
+        <strong style="font-size: 0.95rem; color: #0f172a;">{{ advisory.message }}</strong>
+        <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
+          Distance to {{ hospital.name }}: <strong>{{ dist_km }} km</strong> (Est. transit: <strong>{{ travel_time_mins }} mins</strong>)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Queue Token Card -->
+  <div class="card" style="text-align: center; border: 2px solid #0284c7; background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%); box-shadow: var(--shadow-md); padding: 1.75rem 1.25rem;">
+    <span style="font-size: 0.75rem; text-transform: uppercase; color: #0284c7; font-weight: 800; letter-spacing: 1px;">
+      YOUR LIVE QUEUE TOKEN
+    </span>
+    
+    <div style="font-size: 3.5rem; font-weight: 900; color: #0284c7; line-height: 1; margin: 10px 0;">
+      #{{ token.token_number }}
+    </div>
+
+    <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">
+      {{ doctor.name }}
+    </div>
+    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
+      {{ doctor.specialization }} • Cabin: <strong>{{ doctor.cabin_number }}</strong>
+    </p>
+
+    <!-- Key Metrics Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #bae6fd;">
+      <div style="background: #ffffff; padding: 10px; border-radius: var(--radius-sm); border: 1px solid #e0f2fe;">
+        <span style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Currently Serving</span>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-top: 2px;">
+          #{{ doctor.current_token_number }}
+        </div>
+      </div>
+
+      <div style="background: #ffffff; padding: 10px; border-radius: var(--radius-sm); border: 1px solid #e0f2fe;">
+        <span style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700;">People Ahead of You</span>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #d97706; margin-top: 2px;">
+          {{ people_ahead }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Predicted Wait Time -->
+    <div style="margin-top: 1rem; background: #ffffff; padding: 12px; border-radius: var(--radius-sm); border: 1px solid #e0f2fe;">
+      <span style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Predicted Turn Time</span>
+      <div style="font-size: 1.4rem; font-weight: 800; color: #16a34a; margin-top: 2px;">
+        ~{{ predicted_wait_mins }} Minutes
+      </div>
+      <p style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+        Based on doctor's active pace ({{ hospital.avg_consultation_time }} mins/patient). Recalculates dynamically every time the doctor marks a patient done.
+      </p>
+    </div>
+  </div>
+
+  <!-- Instructions Card -->
+  <div class="card" style="background: #f8fafc; font-size: 0.85rem; color: #475569;">
+    <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Hospital Visit Advice</h4>
+    <ul style="padding-left: 1.25rem; line-height: 1.5;">
+      <li>Show this screen to the OPD reception on arrival.</li>
+      <li>If you arrive after your token is called, notify the nurse to be placed in the next available buffer slot.</li>
+      <li>Live updates refresh automatically every 4 seconds.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  // Auto-refresh queue tracker every 4 seconds
+  setInterval(() => {
+    window.location.reload();
+  }, 4000);
+</script>
+{% endblock %}

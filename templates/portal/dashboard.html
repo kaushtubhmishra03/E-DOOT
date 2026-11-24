@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Command Center — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin-top: 2rem; margin-bottom: 3.5rem;">
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 15px;">
+    <div>
+      <span class="brand-badge">Hospital Operations</span>
+      <h1 style="font-size: 1.8rem; font-weight: 800; margin-top: 0.25rem;">
+        Doctor & Admin Command Center
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Active Facility: <strong>{{ hospital.name if hospital else 'AIIMS New Delhi' }}</strong> • 
+        Logged as: <strong>{{ current_user.full_name if current_user else 'Dr. Anita Verma' }}</strong> ({{ current_user.role|title if current_user else 'Doctor' }})
+      </p>
+    </div>
+
+    <!-- Quick Navigation Tabs -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="{{ url_for('portal.doctor_er_board') }}" class="btn btn-danger btn-sm">🚨 Live ER Pre-Alerts</a>
+      <a href="{{ url_for('portal.doctor_clinic') }}" class="btn btn-primary btn-sm">🩺 OPD Queue Controller</a>
+      <a href="{{ url_for('portal.admin_bed_management') }}" class="btn btn-outline btn-sm">🛏️ Live Bed & Crowd Manager</a>
+      <a href="{{ url_for('portal.admin_analytics') }}" class="btn btn-outline btn-sm">📊 Analytics</a>
+    </div>
+  </div>
+
+  <!-- Operational Metric Stats -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 15px; margin-bottom: 1.5rem;">
+    <div class="card" style="margin-bottom: 0; border-left: 4px solid #dc2626;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Incoming ER Pre-Alerts</span>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #dc2626; margin-top: 4px;">{{ recent_events|length }}</div>
+      <div style="font-size: 0.75rem; color: #dc2626; font-weight: 600;">Active En-Route Ambulances</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0; border-left: 4px solid #0284c7;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">OPD Waiting Queue</span>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #0284c7; margin-top: 4px;">{{ active_tokens }}</div>
+      <div style="font-size: 0.75rem; color: #0284c7; font-weight: 600;">Avg Consultation: {{ hospital.avg_consultation_time }} mins</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0; border-left: 4px solid #16a34a;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">ICU Bed Availability</span>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #16a34a; margin-top: 4px;">
+        {{ hospital.get_bed_count('ICU') if hospital else 4 }} Free
+      </div>
+      <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">Trauma: {{ hospital.get_bed_count('Trauma') if hospital else 5 }} Free</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0; border-left: 4px solid #d97706;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Congestion Level</span>
+      <div style="font-size: 1.4rem; font-weight: 800; color: #d97706; margin-top: 8px;">
+        {{ hospital.crowd_level if hospital else 'Moderate' }}
+      </div>
+      <div style="font-size: 0.75rem; color: #64748b;">Dynamic Score Weight: 0.3</div>
+    </div>
+  </div>
+
+  <!-- Primary Action Modules Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+    <!-- Module 1: ER Live Pre-Alerts -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h3 class="card-title" style="margin: 0; font-size: 1.15rem;">🚨 Emergency Department Board</h3>
+          <span class="badge badge-blood">Live ER</span>
+        </div>
+        <p class="card-sub">
+          Monitor incoming emergency pre-alerts with live ETA countdowns, review triaged category & injury photos, and hold trauma beds.
+        </p>
+      </div>
+      <a href="{{ url_for('portal.doctor_er_board') }}" class="btn btn-danger btn-block">
+        Open ER Pre-Alert Board ➔
+      </a>
+    </div>
+
+    <!-- Module 2: Outpatient Queue Controls -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h3 class="card-title" style="margin: 0; font-size: 1.15rem;">🩺 OPD Queue & Prescriptions</h3>
+          <span class="badge badge-status">Consultation</span>
+        </div>
+        <p class="card-sub">
+          Call Next, mark consultations done, document digital visit notes, and auto-export prescribed medicines into patient reminder routines.
+        </p>
+      </div>
+      <a href="{{ url_for('portal.doctor_clinic') }}" class="btn btn-primary btn-block">
+        Open Queue Controller ➔
+      </a>
+    </div>
+
+    <!-- Module 3: Admin Bed & Crowd Live Manager -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border: 2px solid #38bdf8;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h3 class="card-title" style="margin: 0; font-size: 1.15rem;">🛏️ Live Bed & Crowd Controller</h3>
+          <span class="badge" style="background: #38bdf8; color: #0c4a6e; font-weight: 800;">Key Demo</span>
+        </div>
+        <p class="card-sub">
+          Adjust ICU, Trauma, or General beds and crowd congestion levels. <strong>Watch hospital rankings on the helper's screen flip in real time!</strong>
+        </p>
+      </div>
+      <a href="{{ url_for('portal.admin_bed_management') }}" class="btn btn-outline btn-block" style="border-color: #38bdf8; color: #0284c7; font-weight: 700;">
+        Open Live Bed & Crowd Manager ➔
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

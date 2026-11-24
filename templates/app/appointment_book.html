@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Book Outpatient Appointment — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 540px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 800;">Book Outpatient Consultation</h1>
+      <p style="color: var(--text-muted); font-size: 0.85rem;">Instantly issues your digital queue token.</p>
+    </div>
+    <a href="{{ url_for('app_routes.appointments_index') }}" class="btn btn-outline btn-sm">← Back</a>
+  </div>
+
+  <div class="card" style="box-shadow: var(--shadow-md);">
+    <form method="POST" action="{{ url_for('app_routes.book_appointment') }}">
+      <div class="form-group">
+        <label class="form-label" for="doctor_id">Select Physician / Clinic</label>
+        <select id="doctor_id" name="doctor_id" class="form-control" required>
+          {% for doc in doctors %}
+            <option value="{{ doc.id }}" {% if request.args.get('doctor_id')|int == doc.id %}selected{% endif %}>
+              {{ doc.name }} ({{ doc.specialization }}) — {{ doc.hospital.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label class="form-label" for="scheduled_date">Appointment Date</label>
+          <input 
+            type="date" 
+            id="scheduled_date" 
+            name="scheduled_date" 
+            class="form-control" 
+            value="{{ today_str or '' }}" 
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="scheduled_slot">Time Slot</label>
+          <select id="scheduled_slot" name="scheduled_slot" class="form-control">
+            <option value="10:00 AM">10:00 AM</option>
+            <option value="10:30 AM">10:30 AM</option>
+            <option value="11:00 AM">11:00 AM</option>
+            <option value="11:30 AM">11:30 AM</option>
+            <option value="02:00 PM">02:00 PM</option>
+            <option value="02:30 PM">02:30 PM</option>
+            <option value="03:00 PM">03:00 PM</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="symptoms">Symptoms / Reason for Visit (Optional)</label>
+        <textarea 
+          id="symptoms" 
+          name="symptoms" 
+          class="form-control" 
+          rows="2" 
+          placeholder="e.g. Mild persistent dry cough, medication review..."
+        ></textarea>
+      </div>
+
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 1.25rem; font-size: 0.8rem; color: #166534;">
+        💡 <strong>Predictive OPD Queue:</strong> Upon booking, E-Doot automatically calculates your token position and will alert you with a <em>"Leave Now"</em> notification based on your real-time distance and doctor consultation pace.
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="padding: 12px; font-weight: 800; font-size: 1rem;">
+        Confirm Booking & Generate Live Token ➔
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Set default appointment date to today
+  document.addEventListener("DOMContentLoaded", () => {
+    const dateInput = document.getElementById("scheduled_date");
+    if (dateInput && !dateInput.value) {
+      const today = new Date().toISOString().split("T")[0];
+      dateInput.value = today;
+      dateInput.min = today;
+    }
+  });
+</script>
+{% endblock %}

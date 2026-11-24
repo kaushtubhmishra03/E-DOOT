@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Medical Profile & Privacy — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 620px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+    <div>
+      <h1 style="font-size: 1.6rem; font-weight: 800;">{{ t('profile_title') }}</h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">{{ t('profile_sub') }}</p>
+    </div>
+    <a href="{{ url_for('app_routes.index') }}" class="btn btn-outline btn-sm">← Back</a>
+  </div>
+
+  <form method="POST" action="{{ url_for('app_routes.profile') }}">
+    <!-- Clinical & Emergency Information -->
+    <div class="card">
+      <h3 class="card-title">🩺 Core Medical Details</h3>
+      <p class="card-sub">Accurate medical data helps paramedics and ER doctors deliver immediate, safe care.</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label class="form-label" for="blood_group">Blood Group</label>
+          <select id="blood_group" name="blood_group" class="form-control">
+            <option value="Unknown" {% if profile.blood_group == 'Unknown' %}selected{% endif %}>Select Blood Group</option>
+            <option value="A+" {% if profile.blood_group == 'A+' %}selected{% endif %}>A+</option>
+            <option value="A-" {% if profile.blood_group == 'A-' %}selected{% endif %}>A-</option>
+            <option value="B+" {% if profile.blood_group == 'B+' %}selected{% endif %}>B+</option>
+            <option value="B-" {% if profile.blood_group == 'B-' %}selected{% endif %}>B-</option>
+            <option value="AB+" {% if profile.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+            <option value="AB-" {% if profile.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+            <option value="O+" {% if profile.blood_group == 'O+' %}selected{% endif %}>O+</option>
+            <option value="O-" {% if profile.blood_group == 'O-' %}selected{% endif %}>O-</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="age">Age</label>
+          <input type="number" id="age" name="age" class="form-control" value="{{ profile.age or '' }}" placeholder="Years">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="gender">Gender</label>
+        <select id="gender" name="gender" class="form-control">
+          <option value="Male" {% if profile.gender == 'Male' %}selected{% endif %}>Male</option>
+          <option value="Female" {% if profile.gender == 'Female' %}selected{% endif %}>Female</option>
+          <option value="Other" {% if profile.gender == 'Other' %}selected{% endif %}>Other</option>
+          <option value="Unspecified" {% if profile.gender == 'Unspecified' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="allergies">Known Drug / Food Allergies</label>
+        <input 
+          type="text" 
+          id="allergies" 
+          name="allergies" 
+          class="form-control" 
+          value="{{ profile.allergies or '' }}" 
+          placeholder="e.g. Penicillin, Sulfa, Peanuts, Latex (or 'None')"
+        >
+        <small style="color: var(--text-muted); font-size: 0.75rem;">Critical for ER doctors prior to drug administration.</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="chronic_conditions">Pre-Existing Conditions</label>
+        <input 
+          type="text" 
+          id="chronic_conditions" 
+          name="chronic_conditions" 
+          class="form-control" 
+          value="{{ profile.chronic_conditions or '' }}" 
+          placeholder="e.g. Asthma, Type 2 Diabetes, Hypertension, Epilepsy"
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="current_medications">Active Prescribed Medications</label>
+        <input 
+          type="text" 
+          id="current_medications" 
+          name="current_medications" 
+          class="form-control" 
+          value="{{ profile.current_medications or '' }}" 
+          placeholder="e.g. Inhaler (Salbutamol 100mcg), Metformin 500mg"
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="address">Residential Address / City</label>
+        <input 
+          type="text" 
+          id="address" 
+          name="address" 
+          class="form-control" 
+          value="{{ profile.address or '' }}" 
+          placeholder="e.g. Sector 45, Noida / Delhi"
+        >
+      </div>
+    </div>
+
+    <!-- Emergency Contact (ICE) -->
+    <div class="card">
+      <h3 class="card-title">🚨 Emergency Contact (In Case of Emergency)</h3>
+      <p class="card-sub">This person receives emergency SMS alerts when a bystander triggers SOS.</p>
+
+      <div class="form-group">
+        <label class="form-label" for="emergency_contact_name">Contact Full Name</label>
+        <input 
+          type="text" 
+          id="emergency_contact_name" 
+          name="emergency_contact_name" 
+          class="form-control" 
+          value="{{ profile.emergency_contact_name or '' }}" 
+          placeholder="e.g. Priya Sharma"
+        >
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label class="form-label" for="emergency_contact_phone">Contact Phone Number</label>
+          <input 
+            type="tel" 
+            id="emergency_contact_phone" 
+            name="emergency_contact_phone" 
+            class="form-control" 
+            value="{{ profile.emergency_contact_phone or '' }}" 
+            placeholder="e.g. +91 9876543299"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emergency_contact_relation">Relationship</label>
+          <input 
+            type="text" 
+            id="emergency_contact_relation" 
+            name="emergency_contact_relation" 
+            class="form-control" 
+            value="{{ profile.emergency_contact_relation or 'Family' }}" 
+            placeholder="e.g. Spouse, Parent, Sibling"
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy Controls (User-Controlled Visibility on QR Scan) -->
+    <div class="card" style="border: 2px solid #bae6fd; background: #f8fafc;">
+      <h3 class="card-title">{{ t('privacy_toggles_title') }}</h3>
+      <p class="card-sub">{{ t('privacy_toggles_desc') }}</p>
+
+      <div class="privacy-toggle-list">
+        <div class="toggle-row">
+          <div>
+            <strong>Show Full Name</strong>
+            <p>Display your name on the emergency card</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" name="show_full_name" {% if settings.show_full_name %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <strong>Show Blood Group</strong>
+            <p>Recommended to keep enabled for blood transfusions</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" name="show_blood_group" {% if settings.show_blood_group %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <strong>Show Allergies</strong>
+            <p>Prevents fatal drug reactions during unconscious care</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" name="show_allergies" {% if settings.show_allergies %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <strong>Show Pre-Existing Conditions</strong>
+            <p>Crucial for cardiac, diabetic, or asthmatic triage</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" name="show_conditions" {% if settings.show_conditions %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <strong>Show Current Medications</strong>
+            <p>Helps paramedics prevent medication interactions</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" name="show_medications" {% if settings.show_medications %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <strong>Show Emergency Contact</strong>
+            <p>Allows bystanders to call family directly</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" name="show_emergency_contact" {% if settings.show_emergency_contact %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <strong>Show Residential Address</strong>
+            <p>Hidden by default for citizen privacy</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" name="show_address" {% if settings.show_address %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block" style="padding: 14px; font-size: 1.05rem;">
+      {{ t('save_profile') }}
+    </button>
+  </form>
+</div>
+
+<style>
+.privacy-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--surface-border);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-row strong { font-size: 0.92rem; color: #0f172a; }
+.toggle-row p { font-size: 0.78rem; color: #64748b; margin: 2px 0 0 0; }
+</style>
+{% endblock %}

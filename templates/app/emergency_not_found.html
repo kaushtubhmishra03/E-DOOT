@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Assistance — E-Doot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/emergency.css') }}">
+</head>
+<body class="emergency-page">
+  <div class="emergency-container" style="text-align: center; margin-top: 3rem;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+    <h1 style="font-size: 1.6rem; color: #fff;">Medical Profile Unregistered</h1>
+    <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 2rem;">
+      The scanned emergency QR code is unlinked or inactive. If this is an active medical crisis, dial emergency dispatch immediately:
+    </p>
+
+    <div class="call-grid">
+      <a href="tel:108" class="call-btn call-ambulance" style="padding: 16px;">
+        <span style="font-size: 1.8rem;">🚑</span>
+        <span>Call Ambulance (108)</span>
+      </a>
+
+      <a href="tel:112" class="call-btn call-police" style="padding: 16px;">
+        <span style="font-size: 1.8rem;">🚓</span>
+        <span>Call Police / SOS (112)</span>
+      </a>
+    </div>
+
+    <div style="margin-top: 2rem;">
+      <a href="{{ url_for('main.index') }}" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem;">
+        ← Go to E-Doot Home
+      </a>
+    </div>
+  </div>
+</body>
+</html>

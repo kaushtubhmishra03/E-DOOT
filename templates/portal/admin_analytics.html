@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Operational Analytics — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <span class="badge badge-status">Operational Intelligence</span>
+      <h1 style="font-size: 1.8rem; font-weight: 800; margin-top: 4px;">
+        📊 Hospital Network Analytics
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">
+        Performance metrics for triage throughput, queue wait compliance, and emergency arrivals.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline btn-sm">← Portal Home</a>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 1.5rem;">
+    <div class="card" style="margin-bottom: 0;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Total Emergency Pre-Alerts</span>
+      <div style="font-size: 2.2rem; font-weight: 900; color: #dc2626; margin-top: 2px;">{{ total_emergencies }}</div>
+      <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">100% Pre-Alerted to ER</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Completed Outpatient Visits</span>
+      <div style="font-size: 2.2rem; font-weight: 900; color: #0284c7; margin-top: 2px;">{{ completed_consultations }}</div>
+      <div style="font-size: 0.75rem; color: #0284c7; font-weight: 600;">Digital Prescriptions Exported</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Average Consultation Duration</span>
+      <div style="font-size: 2.2rem; font-weight: 900; color: #16a34a; margin-top: 2px;">{{ hospital.avg_consultation_time }}m</div>
+      <div style="font-size: 0.75rem; color: #64748b;">Continuously Learns on 'Done'</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Active Queue Tokens</span>
+      <div style="font-size: 2.2rem; font-weight: 900; color: #d97706; margin-top: 2px;">{{ waiting_tokens }}</div>
+      <div style="font-size: 0.75rem; color: #d97706; font-weight: 600;">Patients In OPD Waiting Area</div>
+    </div>
+  </div>
+
+  <!-- Emergency Intake Breakdown -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <h3 class="card-title">🚑 Emergency Arrivals by Triaged Category</h3>
+    <p class="card-sub">Distribution of acute presentations triaged through Good Samaritan QR scans.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 1rem;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">
+          <span>🚨 Cardiac / Coronary Syndrome</span>
+          <span>{{ cardiac_emergencies }} Arrivals</span>
+        </div>
+        <div style="height: 10px; background: #fee2e2; border-radius: 999px; overflow: hidden;">
+          <div style="width: {% if total_emergencies > 0 %}{{ (cardiac_emergencies / total_emergencies * 100)|round }}{% else %}50{% endif %}%; height: 100%; background: #dc2626;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">
+          <span>🩹 Major Trauma & Hemorrhagic Bleeding</span>
+          <span>{{ trauma_emergencies }} Arrivals</span>
+        </div>
+        <div style="height: 10px; background: #e0f2fe; border-radius: 999px; overflow: hidden;">
+          <div style="width: {% if total_emergencies > 0 %}{{ (trauma_emergencies / total_emergencies * 100)|round }}{% else %}30{% endif %}%; height: 100%; background: #0284c7;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">
+          <span>🧠 Acute Stroke / FAST Symptoms</span>
+          <span>1 Arrival</span>
+        </div>
+        <div style="height: 10px; background: #fef3c7; border-radius: 999px; overflow: hidden;">
+          <div style="width: 20%; height: 100%; background: #d97706;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

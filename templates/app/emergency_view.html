@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{{ t('emergency_summary_title') }} — E-Doot</title>
+  
+  <meta name="theme-color" content="#dc2626">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/emergency.css') }}">
+</head>
+<body class="emergency-page">
+
+  <div class="emergency-container">
+    <!-- Header with Language Switcher -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.5rem;">🚑</span>
+        <span style="font-weight: 800; font-size: 1.1rem; color: #fff;">E-DOOT AID</span>
+      </div>
+      
+      <!-- Rapid Language Selector for Helper in Panic -->
+      <select onchange="window.location.href='/set-language/' + this.value;" style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
+        <option value="en" {% if current_lang == 'en' %}selected{% endif %}>English</option>
+        <option value="hi" {% if current_lang == 'hi' %}selected{% endif %}>हिंदी</option>
+        <option value="mr" {% if current_lang == 'mr' %}selected{% endif %}>मराठी</option>
+      </select>
+    </div>
+
+    <!-- Good Samaritan Legal Shield Banner (Supreme Court of India) -->
+    <div class="good-samaritan-shield">
+      <div class="shield-icon">🛡️</div>
+      <div class="shield-content">
+        <h3>{{ t('good_samaritan_title') }}</h3>
+        <p>{{ t('good_samaritan_desc') }}</p>
+      </div>
+    </div>
+
+    <!-- Page Title -->
+    <div class="emergency-header">
+      <h1>{{ t('emergency_summary_title') }}</h1>
+      <p>{{ t('emergency_summary_subtitle') }}</p>
+    </div>
+
+    <!-- Hero Vital Summary Card -->
+    <div class="vital-summary-card">
+      <div class="patient-vital-head">
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Patient</div>
+          <h2>{{ summary.full_name }}</h2>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: #fca5a5; font-weight: 700; margin-bottom: 2px;">Blood Group</div>
+          <span class="blood-group-badge-large">{{ summary.blood_group }}</span>
+        </div>
+      </div>
+
+      <!-- Allergies -->
+      <div class="vital-row">
+        <div class="vital-label">⚠️ {{ t('allergies') }}</div>
+        <div class="vital-value {% if summary.allergies != 'None' and summary.allergies != 'Protected' %}warning-text{% endif %}">
+          {{ summary.allergies or 'None reported' }}
+        </div>
+      </div>
+
+      <!-- Conditions -->
+      <div class="vital-row">
+        <div class="vital-label">🩺 {{ t('chronic_conditions') }}</div>
+        <div class="vital-value">{{ summary.chronic_conditions or 'None reported' }}</div>
+      </div>
+
+      <!-- Medications -->
+      <div class="vital-row">
+        <div class="vital-label">💊 {{ t('current_medications') }}</div>
+        <div class="vital-value">{{ summary.current_medications or 'None reported' }}</div>
+      </div>
+
+      <!-- Emergency Contact -->
+      {% if summary.emergency_contact_phone %}
+        <div class="vital-row" style="margin-bottom: 0;">
+          <div class="vital-label">📞 {{ t('emergency_contact') }}</div>
+          <div class="vital-value" style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <span>{{ summary.emergency_contact_name }} ({{ summary.emergency_contact_relation }})</span>
+            <a href="tel:{{ summary.emergency_contact_phone }}" class="btn btn-sm btn-outline" style="color: #34d399; border-color: #059669; padding: 4px 10px;">
+              Call Now
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- HERO ACTION: START EMERGENCY SOS & TRIAGE ROUTING -->
+    <a href="/app/emergency/{{ qr_uuid }}/sos" class="sos-hero-btn" id="startSosBtn">
+      <span style="font-size: 1.5rem;">🚨</span>
+      <span>{{ t('start_triage_btn') }}</span>
+      <span style="font-size: 1.3rem;">➔</span>
+    </a>
+
+    <!-- Direct 1-Tap Helplines -->
+    <div class="call-grid">
+      <a href="tel:108" class="call-btn call-ambulance">
+        <span style="font-size: 1.5rem; margin-bottom: 2px;">🚑</span>
+        <span>{{ t('call_ambulance') }}</span>
+      </a>
+
+      <a href="tel:112" class="call-btn call-police">
+        <span style="font-size: 1.5rem; margin-bottom: 2px;">🚓</span>
+        <span>{{ t('call_police') }}</span>
+      </a>
+
+      {% if summary.emergency_contact_phone %}
+        <a href="tel:{{ summary.emergency_contact_phone }}" class="call-btn call-contact-card">
+          <span style="font-size: 1.2rem; margin-bottom: 2px;">📞</span>
+          <span>{{ t('call_contact') }}: {{ summary.emergency_contact_phone }}</span>
+        </a>
+      {% endif %}
+    </div>
+
+    <!-- Access Log Notice -->
+    <p class="audit-notice">
+      🔒 {{ t('access_logged_note') }}
+    </p>
+  </div>
+
+  <!-- Optional Geolocation logger script -->
+  <script>
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        fetch("/app/emergency/{{ qr_uuid }}/log-location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          })
+        }).catch(() => {});
+      }, () => {});
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!-- Simulated SMS Notification Drawer Modal -->
+<div id="smsModal" class="sms-modal-overlay" style="display: none;">
+  <div class="sms-modal-card">
+    <div class="sms-header">
+      <div class="sms-title-wrap">
+        <span>📩</span>
+        <h3>Simulated SMS Dispatch Live Log</h3>
+      </div>
+      <button id="smsCloseBtn" class="sms-close-btn">&times;</button>
+    </div>
+    <div class="sms-info-bar">
+      <span>Twilio API / Fallback Broadcast Feed</span>
+      <span class="live-pulse-dot">● LIVE</span>
+    </div>
+    <div id="smsList" class="sms-feed-body">
+      <div class="empty-state">No emergency SMS dispatched yet.</div>
+    </div>
+  </div>
+</div>
+
+<style>
+.sms-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.sms-modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sms-header {
+  padding: 14px 18px;
+  background: #0f172a;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sms-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sms-title-wrap h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+.sms-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.sms-info-bar {
+  background: #f1f5f9;
+  padding: 6px 18px;
+  font-size: 0.75rem;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--surface-border);
+}
+.live-pulse-dot {
+  color: #16a34a;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.sms-feed-body {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  flex: 1;
+}
+.sms-card {
+  background: #ffffff;
+  border: 1px solid var(--surface-border);
+  border-left: 4px solid #d97706;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.sms-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  margin-bottom: 6px;
+}
+.sms-to strong { color: #0284c7; }
+.sms-time { color: #64748b; }
+.sms-body {
+  font-size: 0.85rem;
+  color: #1e293b;
+  line-height: 1.4;
+  background: #f8fafc;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-family: monospace;
+}
+.sms-status {
+  font-size: 0.7rem;
+  color: #16a34a;
+  font-weight: 700;
+  text-align: right;
+}
+.empty-state {
+  text-align: center;
+  color: #94a3b8;
+  padding: 2rem 1rem;
+  font-size: 0.9rem;
+}
+</style>

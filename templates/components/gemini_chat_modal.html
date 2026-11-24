@@ -1,0 +1,215 @@
+<!-- Floating Arogya Saathi Trigger Button -->
+<button id="geminiTriggerBtn" class="floating-gemini-btn" title="{{ t('arogya_saathi_title') }}">
+  <span class="btn-sparkle">✨</span>
+  <span class="btn-label">Arogya Saathi AI</span>
+</button>
+
+<!-- Gemini Assistant Modal Drawer -->
+<div id="geminiModal" class="gemini-modal-overlay" style="display: none;">
+  <div class="gemini-modal-card">
+    <div class="gemini-header">
+      <div class="gemini-title-wrap">
+        <span class="gemini-logo">🌿</span>
+        <div>
+          <h3>{{ t('arogya_saathi_title') }}</h3>
+          <p>{{ t('arogya_saathi_sub') }}</p>
+        </div>
+      </div>
+      <button id="geminiCloseBtn" class="gemini-close-btn" aria-label="Close">&times;</button>
+    </div>
+
+    <!-- Quick prompt chips -->
+    <div class="quick-chips-wrapper">
+      <button type="button" class="quick-chip" data-query="What is a normal blood pressure reading?">Normal BP?</button>
+      <button type="button" class="quick-chip" data-query="How to manage high fever at home?">Fever First-Aid</button>
+      <button type="button" class="quick-chip" data-query="Should I take blood pressure medication before or after food?">Medicine Timing</button>
+      <button type="button" class="quick-chip chip-danger" data-query="I feel sudden severe chest pain and left arm numbness">🚨 Chest Pain Test</button>
+    </div>
+
+    <div id="geminiChatMessages" class="gemini-chat-body">
+      <div class="chat-msg assistant-msg">
+        <div class="msg-bubble">
+          Namaste! I am <strong>Arogya Saathi</strong>, your E-Doot health guide. Ask me any general health questions, first-aid doubts, or medication timing tips.
+          <br><br>
+          <small><em>Note: I provide general health guidance. In an acute emergency, please always hit the Emergency SOS button immediately.</em></small>
+        </div>
+      </div>
+    </div>
+
+    <form id="geminiChatForm" class="gemini-input-form">
+      <input 
+        type="text" 
+        id="geminiQueryInput" 
+        class="form-control gemini-input" 
+        placeholder="{{ t('ask_doubt_placeholder') }}" 
+        autocomplete="off"
+        required
+      >
+      <button type="submit" class="btn btn-primary gemini-send-btn">{{ t('send_btn') }}</button>
+    </form>
+  </div>
+</div>
+
+<style>
+.floating-gemini-btn {
+  position: fixed;
+  bottom: 75px;
+  right: 20px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 99;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.floating-gemini-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+}
+.btn-sparkle { font-size: 1.15rem; }
+
+.gemini-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 20px;
+}
+.gemini-modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 440px;
+  height: 600px;
+  max-height: 85vh;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+}
+.gemini-header {
+  padding: 14px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--surface-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.gemini-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gemini-logo { font-size: 1.5rem; }
+.gemini-title-wrap h3 { font-size: 1rem; font-weight: 800; color: #0f172a; margin: 0; }
+.gemini-title-wrap p { font-size: 0.75rem; color: #64748b; margin: 0; }
+.gemini-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #64748b;
+  cursor: pointer;
+}
+.quick-chips-wrapper {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #f1f5f9;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.quick-chip {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #334155;
+  transition: all 0.15s;
+}
+.quick-chip:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.quick-chip.chip-danger {
+  color: #b91c1c;
+  border-color: #fca5a5;
+  background: #fff5f5;
+}
+.gemini-chat-body {
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #ffffff;
+}
+.chat-msg {
+  display: flex;
+  width: 100%;
+}
+.chat-msg.user-msg { justify-content: flex-end; }
+.chat-msg.assistant-msg { justify-content: flex-start; }
+.msg-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.user-msg .msg-bubble {
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}
+.assistant-msg .msg-bubble {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-bottom-left-radius: 2px;
+  border: 1px solid #e2e8f0;
+}
+.emergency-bubble {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 2px solid #ef4444 !important;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+.provider-pill {
+  font-size: 0.7rem;
+  color: #64748b;
+  display: inline-block;
+  margin-top: 6px;
+  border: 1px solid #cbd5e1;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #fff;
+}
+.gemini-input-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--surface-border);
+  background: #f8fafc;
+}
+.gemini-input { flex: 1; }
+.gemini-send-btn { padding: 8px 16px; }
+</style>

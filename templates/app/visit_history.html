@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Medical History & Prescriptions — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 680px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 800;">📋 Medical History & Visit Timeline</h1>
+      <p style="color: var(--text-muted); font-size: 0.85rem;">Official clinical notes, diagnoses, and digital prescriptions.</p>
+    </div>
+    <a href="{{ url_for('app_routes.index') }}" class="btn btn-outline btn-sm">← Back</a>
+  </div>
+
+  {% if visit_notes %}
+    <div class="timeline-container">
+      {% for note in visit_notes %}
+        <div class="card timeline-card" style="margin-bottom: 1.25rem; border-left: 4px solid #0284c7;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.8rem;">
+                {{ note.diagnosis }}
+              </span>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 4px;">
+                {{ note.doctor.name }}
+              </h3>
+              <p style="font-size: 0.8rem; color: #64748b;">
+                {{ note.doctor.specialization }} • {{ note.doctor.hospital.name }}
+              </p>
+            </div>
+            <div style="text-align: right; font-size: 0.78rem; color: #64748b;">
+              {{ note.created_at.strftime('%d %b %Y') }}
+            </div>
+          </div>
+
+          <!-- Clinical Notes -->
+          {% if note.clinical_notes %}
+            <div style="background: #f8fafc; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.85rem; color: #334155; margin: 8px 0; border: 1px solid var(--surface-border);">
+              <strong>Physician Notes:</strong> {{ note.clinical_notes }}
+            </div>
+          {% endif %}
+
+          <!-- Prescribed Medications -->
+          {% if note.reminders %}
+            <div style="margin-top: 10px;">
+              <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">
+                Prescribed Medicines:
+              </span>
+              <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+                {% for med in note.reminders %}
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 10px; font-size: 0.82rem;">
+                    <div>
+                      <strong style="color: #166534;">💊 {{ med.medicine_name }}</strong> ({{ med.dosage }})
+                      <span style="color: #15803d; font-size: 0.75rem;">• {{ med.instructions }}</span>
+                    </div>
+                    <span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.7rem;">
+                      {{ med.time_slot }}
+                    </span>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Follow-up Date -->
+          {% if note.next_checkup_date %}
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--surface-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+              <span style="color: #64748b;">Next Follow-Up Due:</span>
+              <span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 700;">
+                📅 {{ note.next_checkup_date.strftime('%d %b %Y') }}
+              </span>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="text-align: center; padding: 3rem 1.5rem; color: var(--text-muted);">
+      <span style="font-size: 2.5rem;">📜</span>
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-top: 0.5rem;">No Medical Records Yet</h3>
+      <p style="font-size: 0.88rem; max-width: 420px; margin: 0.5rem auto 1.5rem auto;">
+        As you complete hospital visits through E-Doot, official doctor prescriptions, clinical notes, and follow-up alerts will populate your permanent timeline here.
+      </p>
+      <a href="{{ url_for('app_routes.appointments_index') }}" class="btn btn-primary btn-sm">
+        Book Your First Consultation
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

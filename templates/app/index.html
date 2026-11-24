@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Hub — E-Doot{% endblock %}
+
+{% block content %}
+<div class="pwa-wrapper">
+  <!-- Profile Hero Banner -->
+  <div class="profile-hero">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <span class="hero-badge">App ID: @{{ user.app_id }}</span>
+        <h1 class="hero-name">{{ user.full_name }}</h1>
+        <div class="hero-meta">
+          <span>Age: {{ profile.age or 'Not set' }}</span>
+          <span>•</span>
+          <span>Gender: {{ profile.gender or 'Unspecified' }}</span>
+        </div>
+      </div>
+      <div>
+        <span class="blood-pill" title="Blood Group">{{ profile.blood_group or 'Unknown' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Quick Action Tiles -->
+  <div class="action-grid">
+    <!-- Emergency Tile (Hero) -->
+    <a href="{{ url_for('app_routes.qr_card') }}" class="action-tile tile-emergency">
+      <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+        <div>
+          <div class="tile-icon">🚨</div>
+          <div class="tile-title" style="color: #b91c1c;">Emergency QR & Lockscreen Card</div>
+          <div class="tile-desc">Configured for zero-login Good Samaritan aid and 1-tap SOS</div>
+        </div>
+        <div style="font-size: 1.5rem; color: #dc2626;">➔</div>
+      </div>
+    </a>
+
+    <!-- Appointments & Live Queue -->
+    <a href="{{ url_for('app_routes.appointments_index') }}" class="action-tile">
+      <div class="tile-icon">📅</div>
+      <div class="tile-title">Appointments & OPD</div>
+      <div class="tile-desc">Book slots & check doctor schedules</div>
+    </a>
+
+    <!-- Live Queue Turn -->
+    <a href="{{ url_for('app_routes.live_queue') }}" class="action-tile">
+      <div class="tile-icon">⚡</div>
+      <div class="tile-title">Live Queue Tracker</div>
+      <div class="tile-desc">Wait prediction & Leave Now advisory</div>
+    </a>
+
+    <!-- Medication Reminders -->
+    <a href="{{ url_for('app_routes.reminders') }}" class="action-tile">
+      <div class="tile-icon">💊</div>
+      <div class="tile-title">Daily Reminders</div>
+      <div class="tile-desc">Medication checklist & family watch</div>
+    </a>
+
+    <!-- Medical History & Visit Timeline -->
+    <a href="{{ url_for('app_routes.visit_history') }}" class="action-tile">
+      <div class="tile-icon">📜</div>
+      <div class="tile-title">Visit Timeline</div>
+      <div class="tile-desc">Past doctor notes & prescriptions</div>
+    </a>
+
+    <!-- Medical Profile -->
+    <a href="{{ url_for('app_routes.profile') }}" class="action-tile">
+      <div class="tile-icon">🩺</div>
+      <div class="tile-title">Medical Profile</div>
+      <div class="tile-desc">Allergies, conditions, & privacy toggles</div>
+    </a>
+
+    <!-- Access Audit Log -->
+    <a href="{{ url_for('app_routes.audit_log') }}" class="action-tile">
+      <div class="tile-icon">🛡️</div>
+      <div class="tile-title">Privacy Audit Log</div>
+      <div class="tile-desc">Review who scanned your emergency QR</div>
+    </a>
+  </div>
+
+  <!-- Live Queue / Active Appointment Section -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+      <h3 class="card-title" style="margin: 0; font-size: 1.05rem;">🏥 Today's Outpatient Queue</h3>
+      <span class="badge badge-status">Live OPD</span>
+    </div>
+    {% if active_token %}
+      <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: #0369a1; font-weight: 700;">Your Token Number</div>
+            <div style="font-size: 2rem; font-weight: 900; color: #0284c7;">#{{ active_token.token_number }}</div>
+            <div style="font-size: 0.8rem; color: #475569;">{{ active_token.doctor.name }} ({{ active_token.doctor.specialization }})</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.75rem; color: #64748b;">Current Serving</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: #0f172a;">#{{ active_token.doctor.current_token_number }}</div>
+            <a href="{{ url_for('app_routes.live_queue') }}" class="btn btn-sm btn-primary" style="margin-top: 6px; padding: 4px 10px; font-size: 0.78rem;">
+              Track Live ➔
+            </a>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+        No active OPD queue token today. Book a doctor visit or view hospital schedules.
+      </p>
+      <a href="{{ url_for('app_routes.book_appointment') }}" class="btn btn-outline btn-sm btn-block">
+        📅 Find Doctor & Book Slot
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Daily Reminders Section -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+      <h3 class="card-title" style="margin: 0; font-size: 1.05rem;">💊 Medication & Therapy Reminders</h3>
+      <a href="{{ url_for('app_routes.reminders') }}" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 700;">View All</a>
+    </div>
+
+    {% if reminders %}
+      <div class="med-checklist">
+        {% for rem in reminders %}
+          <div class="med-item">
+            <div class="med-info">
+              <h4>{{ rem.medicine_name }} ({{ rem.dosage }})</h4>
+              <p>⏰ {{ rem.time_slot }} • {{ rem.instructions }}</p>
+            </div>
+            <div class="med-btns">
+              <form method="POST" action="{{ url_for('app_routes.log_reminder', reminder_id=rem.id) }}" style="display:inline;">
+                <input type="hidden" name="action" value="taken">
+                <button type="submit" class="btn btn-outline btn-sm" style="color: #16a34a; border-color: #86efac;">
+                  ✓ Taken
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('app_routes.log_reminder', reminder_id=rem.id) }}" style="display:inline;">
+                <input type="hidden" name="action" value="missed">
+                <button type="submit" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fca5a5;">
+                  ✕ Missed
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="font-size: 0.88rem; color: var(--text-muted);">No medication reminders scheduled yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Arogya Saathi Callout -->
+  <div class="card" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-color: #bbf7d0;">
+    <div style="display: flex; gap: 14px; align-items: center;">
+      <span style="font-size: 2rem;">🌿</span>
+      <div style="flex: 1;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #166534; margin-bottom: 2px;">Have Health Doubts?</h4>
+        <p style="font-size: 0.82rem; color: #15803d; line-height: 1.35;">
+          Ask <strong>Arogya Saathi (Gemini AI)</strong> about normal BP, diet, or first-aid in your preferred language.
+        </p>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="document.getElementById('geminiTriggerBtn').click();">
+        Ask AI
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}

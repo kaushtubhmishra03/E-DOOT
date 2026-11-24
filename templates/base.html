@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{% block title %}{{ t('app_name') }} — {{ t('app_tagline') }}{% endblock %}</title>
+  
+  <!-- Favicon / PWA Meta -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="description" content="E-Doot is an emergency-first healthcare network with unauthenticated QR triage and daily outpatient queue tracking.">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pwa-mobile.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+  <!-- Top Navigation Header -->
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a href="{{ url_for('main.index') }}" class="brand-link">
+        <span>🚑 <strong>{{ t('app_name') }}</strong></span>
+        <span class="brand-badge">Emergency Ready</span>
+      </a>
+
+      <div class="nav-actions">
+        <!-- Language Switcher -->
+        <select id="langSelector" class="lang-select" aria-label="Select Language">
+          <option value="en" {% if current_lang == 'en' %}selected{% endif %}>English</option>
+          <option value="hi" {% if current_lang == 'hi' %}selected{% endif %}>हिंदी</option>
+          <option value="mr" {% if current_lang == 'mr' %}selected{% endif %}>मराठी</option>
+        </select>
+
+        {% if current_user %}
+          {% if current_user.role == 'patient' %}
+            <a href="{{ url_for('app_routes.index') }}" class="btn btn-outline btn-sm">{{ t('nav_home') }}</a>
+            <a href="{{ url_for('app_routes.qr_card') }}" class="btn btn-danger btn-sm">QR Card</a>
+          {% else %}
+            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-primary btn-sm">{{ t('nav_portal') }}</a>
+          {% endif %}
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">{{ t('nav_logout') }}</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-sm">{{ t('nav_login') }}</a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">{{ t('nav_signup') }}</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Notifications -->
+  <div class="container flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Content Body -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <p><strong>{{ t('app_name') }}</strong> — Empowering Indian Emergency Healthcare & Outpatient Care.</p>
+      <p><small>Designed with Good Samaritan Legal Protections & Deterministic Triage Routing.</small></p>
+    </div>
+  </footer>
+
+  <!-- Gemini Health Doubt Assistant Component -->
+  {% include "components/gemini_chat_modal.html" %}
+
+  <!-- Judge Demo Director Floating Dock -->
+  {% include "components/demo_bar.html" %}
+
+  <!-- Simulated SMS Drawer -->
+  {% include "components/simulated_sms_modal.html" %}
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/gemini_assistant.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/demo_bar.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

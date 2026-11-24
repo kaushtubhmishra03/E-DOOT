@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Outpatient Queue Controller — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 980px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <span class="badge badge-status">Outpatient Department (OPD)</span>
+      <h1 style="font-size: 1.8rem; font-weight: 800; margin-top: 4px;">
+        {{ doctor.name }} — Clinic Queue Controller
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">
+        {{ doctor.specialization }} • Cabin: <strong>{{ doctor.cabin_number }}</strong> • Facility: <strong>{{ hospital.name }}</strong>
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <form method="POST" action="{{ url_for('portal.doctor_call_next') }}">
+        <button type="submit" class="btn btn-primary" style="padding: 10px 18px; font-weight: 800;">
+          📢 Call Next Patient
+        </button>
+      </form>
+      <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline btn-sm">← Portal Home</a>
+    </div>
+  </div>
+
+  <!-- Queue Status Bar -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 1.5rem;">
+    <div class="card" style="margin-bottom: 0; background: #f0f9ff; border-color: #bae6fd;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #0369a1; font-weight: 700;">Currently Serving Token</span>
+      <div style="font-size: 2.2rem; font-weight: 900; color: #0284c7; margin-top: 2px;">
+        #{{ doctor.current_token_number }}
+      </div>
+      <div style="font-size: 0.75rem; color: #64748b;">
+        {% if current_consultation %}In Room: {{ current_consultation.patient.full_name }}{% else %}Ready for next{% endif %}
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Waiting in Lobby</span>
+      <div style="font-size: 2.2rem; font-weight: 900; color: #0f172a; margin-top: 2px;">
+        {{ waiting_tokens|length }}
+      </div>
+      <div style="font-size: 0.75rem; color: #64748b;">Next: {% if waiting_tokens %}#{{ waiting_tokens[0].token_number }}{% else %}None{% endif %}</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Learned Avg Duration</span>
+      <div style="font-size: 2.2rem; font-weight: 900; color: #16a34a; margin-top: 2px;">
+        {{ hospital.avg_consultation_time }}m
+      </div>
+      <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">Recalculated on every 'Done'</div>
+    </div>
+  </div>
+
+  <!-- ACTIVE CONSULTATION IN PROGRESS -->
+  {% if current_consultation %}
+    <div class="card" style="border: 2px solid #0284c7; background: #fff; margin-bottom: 1.5rem; box-shadow: var(--shadow-md);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-border); padding-bottom: 12px; margin-bottom: 14px;">
+        <div>
+          <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.85rem;">
+            NOW IN CONSULTATION: TOKEN #{{ current_consultation.token_number }}
+          </span>
+          <h2 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-top: 6px;">
+            {{ current_consultation.patient.full_name }}
+          </h2>
+        </div>
+        <div style="text-align: right;">
+          <span class="blood-pill" style="border: 1px solid #fca5a5;">
+            {{ current_consultation.patient.patient_profile.blood_group or 'Unknown' }}
+          </span>
+          <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">
+            Age: {{ current_consultation.patient.patient_profile.age or 'N/A' }} • {{ current_consultation.patient.patient_profile.gender or 'N/A' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Medical History Alert -->
+      <div style="background: #f8fafc; border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 1.25rem; font-size: 0.85rem;">
+        <strong>Patient Medical Record:</strong> Allergies: <span style="color: #dc2626; font-weight: 700;">{{ current_consultation.patient.patient_profile.allergies or 'None' }}</span> • Conditions: {{ current_consultation.patient.patient_profile.chronic_conditions or 'None' }}
+      </div>
+
+      <!-- Digital Prescription & Visit Notes Form -->
+      <form method="POST" action="{{ url_for('portal.doctor_mark_done', token_id=current_consultation.id) }}">
+        <h4 style="font-size: 1rem; font-weight: 800; margin-bottom: 0.75rem; color: #0f172a;">
+          📝 Clinical Visit Notes & Digital Prescription
+        </h4>
+
+        <div class="form-group">
+          <label class="form-label" for="diagnosis">Clinical Diagnosis / Impression</label>
+          <input 
+            type="text" 
+            id="diagnosis" 
+            name="diagnosis" 
+            class="form-control" 
+            placeholder="e.g. Acute Bronchitis / Hypertension Review" 
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="clinical_notes">Physician's Consultation Notes</label>
+          <textarea 
+            id="clinical_notes" 
+            name="clinical_notes" 
+            class="form-control" 
+            rows="2" 
+            placeholder="Document symptoms, examination findings, dietary advice..."
+          ></textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="med_name">Prescribed Medication (Auto-Creates Patient Reminder!)</label>
+            <input 
+              type="text" 
+              id="med_name" 
+              name="med_name" 
+              class="form-control" 
+              placeholder="e.g. Amoxicillin 500mg, Montelukast 10mg"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="med_slot">Timing Slot</label>
+            <select id="med_slot" name="med_slot" class="form-control">
+              <option value="Morning">Morning</option>
+              <option value="Afternoon">Afternoon</option>
+              <option value="Night">Night</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 1.25rem;">
+          <div class="form-group">
+            <label class="form-label" for="med_instr">Instructions</label>
+            <input 
+              type="text" 
+              id="med_instr" 
+              name="med_instr" 
+              class="form-control" 
+              placeholder="e.g. After breakfast with water" 
+              value="After meals"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="next_checkup_date">Follow-up / Next Checkup Date</label>
+            <input type="date" id="next_checkup_date" name="next_checkup_date" class="form-control">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="padding: 12px; font-weight: 800; font-size: 1rem; background: #16a34a; border-color: #15803d;">
+          ✓ Complete Consultation & Update Queue Wait Times ➔
+        </button>
+      </form>
+    </div>
+  {% else %}
+    <div class="card" style="text-align: center; padding: 2.5rem; background: #f8fafc; border-style: dashed; margin-bottom: 1.5rem;">
+      <span style="font-size: 2rem;">🪑</span>
+      <h3 style="font-size: 1.15rem; font-weight: 700; margin-top: 0.5rem;">Doctor Cabin Ready</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1rem;">
+        No patient currently in the consultation room. Click "Call Next Patient" to admit Token #{{ waiting_tokens[0].token_number if waiting_tokens else '1' }}.
+      </p>
+      <form method="POST" action="{{ url_for('portal.doctor_call_next') }}">
+        <button type="submit" class="btn btn-primary" {% if not waiting_tokens %}disabled{% endif %}>
+          📢 Call Next Patient
+        </button>
+      </form>
+    </div>
+  {% endif %}
+
+  <!-- WAITING QUEUE TABLE -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 class="card-title" style="margin: 0; font-size: 1.1rem;">
+        📋 Today's Waiting Queue ({{ waiting_tokens|length }} Patients)
+      </h3>
+      <span class="badge badge-status">Live Dynamic Wait Prediction</span>
+    </div>
+
+    {% if waiting_tokens %}
+      <div class="table-responsive">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+          <thead style="background: #f8fafc; border-bottom: 1px solid var(--surface-border);">
+            <tr>
+              <th style="padding: 10px 14px;">Token #</th>
+              <th style="padding: 10px 14px;">Patient Name</th>
+              <th style="padding: 10px 14px;">App ID</th>
+              <th style="padding: 10px 14px;">Predicted Wait Time</th>
+              <th style="padding: 10px 14px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tok in waiting_tokens %}
+              <tr style="border-bottom: 1px solid var(--surface-border);">
+                <td style="padding: 10px 14px; font-weight: 800; color: #0284c7;">
+                  #{{ tok.token_number }}
+                </td>
+                <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">
+                  {{ tok.patient.full_name }}
+                </td>
+                <td style="padding: 10px 14px; color: var(--text-muted);">
+                  @{{ tok.patient.app_id }}
+                </td>
+                <td style="padding: 10px 14px; color: #475569; font-weight: 600;">
+                  ~{{ loop.index0 * hospital.avg_consultation_time }} mins ({{ loop.index0 }} ahead)
+                </td>
+                <td style="padding: 10px 14px;">
+                  <span class="badge" style="background: #fef3c7; color: #b45309;">Waiting</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); font-size: 0.88rem; text-align: center; padding: 1.5rem;">
+        No patients currently waiting in line.
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

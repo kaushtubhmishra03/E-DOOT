@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Emergency En-Route Tracking — E-Doot</title>
+  
+  <meta name="theme-color" content="#dc2626">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/emergency.css') }}">
+  
+  <style>
+    .tracking-hero {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid #ef4444;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+      margin-bottom: 1.25rem;
+    }
+    .eta-display {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #38bdf8;
+      line-height: 1;
+      margin: 8px 0;
+    }
+    .golden-hour-box {
+      background: #18181b;
+      border: 1px solid #d97706;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .golden-timer {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #fbbf24;
+      font-family: monospace;
+    }
+    .cancel-window-card {
+      background: rgba(220, 38, 38, 0.15);
+      border: 1px solid #ef4444;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: #334155;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 8px 0 10px 0;
+    }
+    .progress-fill {
+      width: 100%;
+      height: 100%;
+      background: #ef4444;
+      transition: width 1s linear;
+    }
+    .first-aid-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .first-aid-step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: #38bdf8;
+      color: #0f172a;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .step-text {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+    .cpr-metronome-btn {
+      background: #dc2626;
+      color: #fff;
+      border: 2px solid #ef4444;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+      transition: transform 0.1s ease;
+      width: 100%;
+      justify-content: center;
+    }
+    .cpr-metronome-btn.active-beat {
+      background: #16a34a;
+      border-color: #22c55e;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+    }
+  </style>
+</head>
+<body class="emergency-page">
+
+  <div class="emergency-container">
+    <!-- Top Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <span class="badge" style="background: #22c55e; color: #052e16; font-weight: 800; font-size: 0.8rem; padding: 5px 12px;">
+        ● EN ROUTE DISPATCH ACTIVE
+      </span>
+      <a href="tel:108" class="btn btn-sm btn-danger" style="padding: 4px 10px;">📞 Call 108</a>
+    </div>
+
+    <!-- Active Tracking & Bed Hold Hero Card -->
+    <div class="tracking-hero">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 1px;">
+        DESTINATION HOSPITAL PRE-ALERT
+      </span>
+      <h1 style="font-size: 1.4rem; color: #fff; margin-top: 4px;">{{ hospital.name }}</h1>
+      <p style="font-size: 0.8rem; color: #38bdf8;">{{ hospital.address }}</p>
+
+      <div class="eta-display">{{ event.eta_minutes }} MINS</div>
+      <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700;">
+        🛏️ 1 {{ event.triage_category }} Bed Held & Trauma Team Pre-Alerted
+      </span>
+    </div>
+
+    <!-- 10-Second False Alarm Cancel Window -->
+    <div class="cancel-window-card" id="cancelWindowBox">
+      <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #fca5a5;">
+        <span>False Alarm Safety Window:</span>
+        <span id="cancelCountdown">10s</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div id="cancelProgress" class="progress-fill"></div>
+      </div>
+      <form id="cancelForm" method="POST" action="{{ url_for('emergency_bp.cancel_emergency', event_token=event.event_token) }}">
+        <input type="hidden" name="reason" value="Bystander triggered false-alarm cancellation.">
+        <button type="submit" class="btn btn-sm btn-outline" style="color: #fca5a5; border-color: #ef4444; width: 100%; font-size: 0.8rem;">
+          ❌ Cancel Alert (False Alarm / Disregard)
+        </button>
+      </form>
+      <div id="cancelWindowNotice" style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">
+        You can cancel within 10s to release held beds and withdraw notifications.
+      </div>
+    </div>
+
+    <!-- Golden Hour Survival Timer (Proposal 1) -->
+    <div class="golden-hour-box">
+      <div>
+        <div style="font-size: 0.72rem; text-transform: uppercase; color: #fbbf24; font-weight: 800; letter-spacing: 0.5px;">
+          ⏳ Golden Hour Survival Window
+        </div>
+        <div style="font-size: 0.78rem; color: #a1a1aa;">Critical time for medical intervention</div>
+      </div>
+      <div class="golden-timer" id="goldenHourTimer">59:59</div>
+    </div>
+
+    <!-- Interactive First-Aid Guidance & CPR Metronome (Proposal 1) -->
+    <div class="first-aid-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1rem; color: #38bdf8; font-weight: 800;">
+          🚑 First-Aid Steps While Ambulance Is En Route
+        </h3>
+      </div>
+
+      <div class="first-aid-steps-list">
+        {% for step in first_aid.steps %}
+          <div class="first-aid-step">
+            <span class="step-num">{{ step.step }}</span>
+            <span class="step-text">{{ step.text }}</span>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if first_aid.has_cpr_metronome %}
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #334155; text-align: center;">
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px;">
+            Audio Metronome for CPR Compressions (Standard 100–120 Beats Per Minute):
+          </p>
+          <button type="button" id="cprMetronomeBtn" class="cpr-metronome-btn" onclick="toggleCprMetronome('cprMetronomeBtn', 110)">
+            ▶️ Start CPR Beat (110 BPM)
+          </button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Family SMS Confirmation Notice -->
+    {% if profile and profile.emergency_contact_phone %}
+      <div class="vital-summary-card" style="border-color: #10b981; background: #064e3b; margin-bottom: 1.25rem; padding: 1rem;">
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span style="font-size: 1.5rem;">📱</span>
+          <div>
+            <h4 style="font-size: 0.88rem; color: #6ee7b7; font-weight: 700; margin: 0;">Family SMS Dispatched</h4>
+            <p style="font-size: 0.75rem; color: #a7f3d0; margin: 2px 0 0 0;">
+              Emergency alert with hospital name & live location sent to <strong>{{ profile.emergency_contact_name }} ({{ profile.emergency_contact_phone }})</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Direct Helpline Grid -->
+    <div class="call-grid">
+      <a href="tel:108" class="call-btn call-ambulance">
+        <span>🚑 Call Ambulance (108)</span>
+      </a>
+      <a href="tel:{{ hospital.emergency_helpline }}" class="call-btn call-police">
+        <span>🏥 Hospital ER Desk: {{ hospital.emergency_helpline }}</span>
+      </a>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/emergency_flow.js') }}"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Initialize 10-second cancel window
+      initCancelWindow(10, "cancelProgress", "cancelCountdown", "cancelForm");
+      // Initialize 60-minute Golden Hour timer
+      initGoldenHourTimer("goldenHourTimer", 60);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ranked Emergency Hospitals — E-Doot</title>
+  
+  <meta name="theme-color" content="#dc2626">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/emergency.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    #mapContainer {
+      height: 250px;
+      width: 100%;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.25rem;
+      border: 1px solid #334155;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .ranked-hospital-card {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .ranked-hospital-card.top-rank {
+      border-color: #22c55e;
+      background: linear-gradient(180deg, #1e293b 0%, #142823 100%);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+    }
+    .rank-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .rank-badge.badge-1 { background: #22c55e; color: #052e16; }
+    .rank-badge.badge-other { background: #334155; color: #94a3b8; }
+    .hospital-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .metrics-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+      font-size: 0.82rem;
+    }
+    .metric-chip {
+      background: #0f172a;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .plain-reason-box {
+      background: rgba(15, 23, 42, 0.7);
+      border-left: 3px solid #38bdf8;
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin: 10px 0 14px 0;
+      line-height: 1.4;
+    }
+    .score-breakdown-details {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      margin-bottom: 12px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body class="emergency-page">
+
+  <div class="emergency-container">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.4rem;">🚑</span>
+        <span style="font-weight: 800; font-size: 1rem; color: #fff;">E-DOOT DISPATCH</span>
+      </div>
+      <a href="tel:108" class="btn btn-sm btn-danger" style="padding: 4px 10px; font-size: 0.8rem;">
+        📞 Call 108
+      </a>
+    </div>
+
+    <!-- Triage Assessment Banner -->
+    <div class="vital-summary-card" style="border-color: #38bdf8; margin-bottom: 1rem; padding: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.7rem; text-transform: uppercase; color: #38bdf8; font-weight: 700;">Triaged Pathway</div>
+          <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff;">
+            🚨 {{ triage_result.category }} Emergency
+          </h2>
+        </div>
+        <span class="badge" style="background: #ef4444; color: #fff; font-size: 0.8rem; padding: 4px 10px;">
+          {{ triage_result.required_bed }} Bed Needed
+        </span>
+      </div>
+      <p style="font-size: 0.8rem; color: #cbd5e1; margin-top: 6px; line-height: 1.35;">
+        {{ triage_result.rationale }}
+      </p>
+    </div>
+
+    <!-- Interactive Leaflet Map -->
+    <div id="mapContainer"></div>
+
+    <div style="margin-bottom: 0.75rem;">
+      <h3 style="font-size: 1.05rem; font-weight: 800; color: #f8fafc;">
+        Top-Ranked Facilities for {{ triage_result.category }}
+      </h3>
+      <p style="font-size: 0.78rem; color: #94a3b8;">
+        Filtered for active {{ triage_result.required_bed }} beds & sorted by <code>Score = 0.5*travel + 0.3*crowd + 0.2*fit</code>
+      </p>
+    </div>
+
+    <!-- Ranked Hospitals List Container -->
+    <div id="rankedHospitalsContainer">
+      {% for h in ranked_hospitals %}
+        <div class="ranked-hospital-card {% if h.rank == 1 %}top-rank{% endif %}" id="cardRank-{{ h.rank }}">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span class="rank-badge {% if h.rank == 1 %}badge-1{% else %}badge-other{% endif %}" id="badgeRank-{{ h.rank }}">
+                {% if h.rank == 1 %}★ Recommended Rank #1{% else %}Rank #{{ h.rank }}{% endif %}
+              </span>
+              <h4 class="hospital-title" id="nameRank-{{ h.rank }}">{{ h.name }}</h4>
+              <p style="font-size: 0.78rem; color: #94a3b8;">{{ h.address }}</p>
+            </div>
+            <div style="text-align: right;">
+              <div class="travel-time-val" id="timeRank-{{ h.rank }}" style="font-size: 1.3rem; font-weight: 900; color: #38bdf8;">
+                {{ h.travel_time_mins|round|int }}m
+              </div>
+              <div style="font-size: 0.7rem; color: #94a3b8;">{{ h.distance_km }} km</div>
+            </div>
+          </div>
+
+          <!-- Metrics Chips -->
+          <div class="metrics-bar">
+            <span class="metric-chip">
+              🛏️ <strong id="bedsRank-{{ h.rank }}">{{ h.free_beds }} Free {{ h.ward_type }} Beds</strong>
+            </span>
+            <span class="metric-chip">
+              👥 Crowd: 
+              <strong id="crowdRank-{{ h.rank }}" style="color: {% if h.crowd_level == 'Critical' %}#ef4444{% elif h.crowd_level == 'Moderate' %}#f59e0b{% else %}#22c55e{% endif %};">
+                {{ h.crowd_level }}
+              </strong>
+            </span>
+            <span class="metric-chip">
+              🏥 {{ h.speciality_desc }}
+            </span>
+          </div>
+
+          <!-- Plain Language Explanation -->
+          <div class="plain-reason-box" id="reasonRank-{{ h.rank }}">
+            <strong>Why this facility:</strong> {{ h.plain_reason }}
+          </div>
+
+          <!-- Mathematical Score Breakdown -->
+          <div class="score-breakdown-details" id="scoreRank-{{ h.rank }}">
+            Formula Score: <strong>{{ h.score }}</strong> (Travel: {{ h.breakdown.travel_time }}m • Crowd: {{ h.breakdown.crowd_penalty }} • Fit: {{ h.breakdown.speciality_penalty }})
+          </div>
+
+          <!-- Selection & Dispatch Form -->
+          <form method="POST" action="{{ url_for('emergency_bp.dispatch_hospital', event_token=event.event_token) }}">
+            <input type="hidden" name="hospital_id" id="hospIdRank-{{ h.rank }}" value="{{ h.hospital_id }}">
+            <input type="hidden" name="eta_minutes" value="{{ h.travel_time_mins|round|int }}">
+            
+            <button type="submit" class="btn {% if h.rank == 1 %}btn-danger{% else %}btn-outline{% endif %} btn-block" style="padding: 12px; font-weight: 800;">
+              Select <span id="btnHospName-{{ h.rank }}">{{ h.name }}</span> & Send Pre-Alert ➔
+            </button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Golden Hour Survival Tips Callout (Proposal 1) -->
+    <div class="vital-summary-card" style="border-color: #f59e0b; background: #1c1917; margin-top: 1.5rem;">
+      <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 1.4rem;">⏳</span>
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #fbbf24;">While You Route: {{ first_aid.title }}</h4>
+      </div>
+      <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #e7e5e4; line-height: 1.5;">
+        {% for step in first_aid.steps %}
+          <li>{{ step.text }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Leaflet Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const helperLat = {{ helper_lat }};
+      const helperLng = {{ helper_lng }};
+      
+      const map = L.map("mapContainer").setView([helperLat, helperLng], 12);
+      
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Helper Marker
+      const helperMarker = L.circleMarker([helperLat, helperLng], {
+        radius: 9,
+        fillColor: "#ef4444",
+        color: "#ffffff",
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(map).bindPopup("<b>📍 Current Patient / Bystander Location</b>").openPopup();
+
+      // Ranked Hospitals Markers
+      const hospitals = [
+        {% for h in ranked_hospitals %}
+          {
+            name: "{{ h.name }}",
+            lat: {{ h.latitude }},
+            lng: {{ h.longitude }},
+            rank: {{ h.rank }},
+            beds: {{ h.free_beds }},
+            ward: "{{ h.ward_type }}",
+            crowd: "{{ h.crowd_level }}"
+          },
+        {% endfor %}
+      ];
+
+      const bounds = [[helperLat, helperLng]];
+
+      hospitals.forEach(h => {
+        const markerColor = h.rank === 1 ? "#22c55e" : "#0284c7";
+        const marker = L.circleMarker([h.lat, h.lng], {
+          radius: 8,
+          fillColor: markerColor,
+          color: "#ffffff",
+          weight: 2,
+          fillOpacity: 0.9
+        }).addTo(map);
+
+        marker.bindPopup(`
+          <strong>#${h.rank}: ${h.name}</strong><br>
+          ${h.beds} ${h.ward} Beds Free • Crowd: ${h.crowd}
+        `);
+
+        // Connect dashed line from helper to top rank
+        if (h.rank === 1) {
+          L.polyline([[helperLat, helperLng], [h.lat, h.lng]], {
+            color: "#22c55e",
+            weight: 3,
+            dashArray: "6, 8"
+          }).addTo(map);
+        }
+
+        bounds.push([h.lat, h.lng]);
+      });
+
+      map.fitBounds(bounds, { padding: [30, 30] });
+
+      // KEY DEMO MOMENT: Background Polling for Live Bed & Crowd Inversion
+      let lastTopHospitalId = {{ ranked_hospitals[0].hospital_id if ranked_hospitals else 0 }};
+
+      async function pollLiveRankings() {
+        try {
+          const res = await fetch(`/api/hospitals/live-rankings?lat=${helperLat}&lng=${helperLng}&category={{ triage_result.category }}&bed_type={{ triage_result.required_bed }}`);
+          const data = await res.json();
+          if (data.status === "success" && data.rankings && data.rankings.length > 0) {
+            const currentTop = data.rankings[0];
+            
+            // Check if top hospital ranking inverted!
+            if (currentTop.hospital_id !== lastTopHospitalId) {
+              lastTopHospitalId = currentTop.hospital_id;
+              
+              // Flash ranking update indicator banner
+              const alertBanner = document.createElement("div");
+              alertBanner.style.cssText = "background: #22c55e; color: #052e16; font-weight: 800; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 0.88rem; animation: pulse-green 1s infinite;";
+              alertBanner.innerHTML = `⚡ LIVE UPDATE: Hospital ranking shifted! Top rank is now <strong>${currentTop.name}</strong> due to real-time bed & crowd change.`;
+              const container = document.getElementById("rankedHospitalsContainer");
+              container.prepend(alertBanner);
+              setTimeout(() => alertBanner.remove(), 6000);
+            }
+
+            // Dynamically update card content for top 3
+            data.rankings.forEach((h, idx) => {
+              const rank = idx + 1;
+              const nameEl = document.getElementById(`nameRank-${rank}`);
+              const bedsEl = document.getElementById(`bedsRank-${rank}`);
+              const crowdEl = document.getElementById(`crowdRank-${rank}`);
+              const reasonEl = document.getElementById(`reasonRank-${rank}`);
+              const timeEl = document.getElementById(`timeRank-${rank}`);
+              const hospIdEl = document.getElementById(`hospIdRank-${rank}`);
+              const btnNameEl = document.getElementById(`btnHospName-${rank}`);
+
+              if (nameEl) nameEl.innerText = h.name;
+              if (bedsEl) bedsEl.innerText = `${h.free_beds} Free ${h.ward_type} Beds`;
+              if (crowdEl) {
+                crowdEl.innerText = h.crowd_level;
+                crowdEl.style.color = h.crowd_level === "Critical" ? "#ef4444" : (h.crowd_level === "Moderate" ? "#f59e0b" : "#22c55e");
+              }
+              if (reasonEl) reasonEl.innerHTML = `<strong>Why this facility:</strong> ${h.plain_reason}`;
+              if (timeEl) timeEl.innerText = `${h.travel_time_mins}m`;
+              if (hospIdEl) hospIdEl.value = h.hospital_id;
+              if (btnNameEl) btnNameEl.innerText = h.name;
+            });
+          }
+        } catch (e) {
+          console.error("Live ranking poll error:", e);
+        }
+      }
+
+      // Poll every 2.5 seconds
+      setInterval(pollLiveRankings, 2500);
+    });
+  </script>
+</body>
+</html>

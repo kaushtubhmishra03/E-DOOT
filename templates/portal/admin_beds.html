@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Live Bed & Crowd Management — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1040px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge" style="background: #38bdf8; color: #0c4a6e; font-weight: 800;">Real-Time Control Room</span>
+        <span style="font-size: 0.85rem; color: #16a34a; font-weight: 700;">● Live Bed & Ranking Sync</span>
+      </div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; margin-top: 4px;">
+        🛏️ Hospital Ward Beds & Crowd Controller
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">
+        Changes made here dynamically alter hospital rankings on all emergency responder screens live.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline btn-sm">← Portal Home</a>
+    </div>
+  </div>
+
+  <!-- THE KEY DEMO MOMENT INSTRUCTION BANNER -->
+  <div class="card" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #38bdf8; margin-bottom: 1.5rem;">
+    <div style="display: flex; gap: 14px; align-items: flex-start;">
+      <span style="font-size: 2rem;">⚡</span>
+      <div style="flex: 1;">
+        <h3 style="font-size: 1.05rem; font-weight: 800; color: #0369a1; margin-bottom: 4px;">
+          Key Hackathon Demo Moment: Live Ranking Inversion
+        </h3>
+        <p style="font-size: 0.85rem; color: #0c4a6e; line-height: 1.45;">
+          Open the <strong>Emergency Ranking Screen</strong> in a side-by-side browser tab. 
+          Then, click <strong>"Zero ICU Beds (Full)"</strong> or toggle Crowd to <strong>"Critical"</strong> for AIIMS below. 
+          <strong>Watch the helper's ranking instantaneously flip Fortis Escorts or Safdarjung into the #1 spot live!</strong>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hospital Beds & Crowd Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px;">
+    {% for h in all_hospitals %}
+      <div class="card" id="hospitalCard-{{ h.id }}" style="margin-bottom: 0; border: 1px solid var(--surface-border); box-shadow: var(--shadow-sm);">
+        <!-- Hospital Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid var(--surface-border); padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">{{ h.name }}</h3>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">{{ h.address }}</p>
+          </div>
+          <span class="badge" id="crowdBadge-{{ h.id }}" style="background: {% if h.crowd_level == 'Critical' %}#fee2e2; color: #b91c1c;{% elif h.crowd_level == 'Moderate' %}#fef3c7; color: #b45309;{% else %}#dcfce7; color: #15803d;{% endif %} font-weight: 700;">
+            {{ h.crowd_level }} Crowd
+          </span>
+        </div>
+
+        <!-- Crowd Controller Buttons -->
+        <div style="margin-bottom: 1rem; background: #f8fafc; padding: 8px 12px; border-radius: var(--radius-sm);">
+          <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">
+            Adjust ER Congestion (Weight: 0.3):
+          </span>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline" 
+              onclick="updateCrowd({{ h.id }}, 'Low')"
+              style="padding: 3px 8px; font-size: 0.75rem;"
+            >
+              🟢 Low
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline" 
+              onclick="updateCrowd({{ h.id }}, 'Moderate')"
+              style="padding: 3px 8px; font-size: 0.75rem;"
+            >
+              🟡 Moderate
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline" 
+              onclick="updateCrowd({{ h.id }}, 'Critical')"
+              style="padding: 3px 8px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;"
+            >
+              🔴 Critical
+            </button>
+          </div>
+        </div>
+
+        <!-- Ward Beds List -->
+        <div>
+          <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">
+            Ward Capacities (Weight: Bed Availability Filter):
+          </span>
+
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+            {% for bed in h.beds %}
+              <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid #e2e8f0;">
+                <div>
+                  <strong style="font-size: 0.88rem; color: #0f172a;">{{ bed.ward_type }} Ward</strong>
+                  <div style="font-size: 0.75rem; color: #64748b;">
+                    Total: {{ bed.total_beds }} • Reserved: {{ bed.reserved_beds }}
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span 
+                    id="bedCount-{{ h.id }}-{{ bed.ward_type }}" 
+                    style="font-size: 1.1rem; font-weight: 800; min-width: 55px; text-align: center; color: {% if (bed.available_beds - bed.reserved_beds) > 0 %}#16a34a{% else %}#dc2626{% endif %};"
+                  >
+                    {{ bed.available_beds - bed.reserved_beds }} Free
+                  </span>
+
+                  <!-- Quick Delta Buttons -->
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline" 
+                    onclick="updateBedDelta({{ h.id }}, '{{ bed.ward_type }}', -1)"
+                    style="padding: 2px 8px; font-size: 0.8rem;"
+                    title="Decrease available beds by 1"
+                  >
+                    -1
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline" 
+                    onclick="updateBedDelta({{ h.id }}, '{{ bed.ward_type }}', 1)"
+                    style="padding: 2px 8px; font-size: 0.8rem;"
+                    title="Increase available beds by 1"
+                  >
+                    +1
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline" 
+                    onclick="setBedZero({{ h.id }}, '{{ bed.ward_type }}')"
+                    style="padding: 2px 8px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;"
+                    title="Mark ward completely full"
+                  >
+                    Zero (Full)
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  // AJAX updater for bed capacity
+  async function updateBedDelta(hospitalId, wardType, delta) {
+    try {
+      const res = await fetch(`/api/admin/hospital/${hospitalId}/update-bed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ward_type: wardType, delta: delta })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        const el = document.getElementById(`bedCount-${hospitalId}-${wardType}`);
+        if (el) {
+          el.innerText = `${data.effective_free} Free`;
+          el.style.color = data.effective_free > 0 ? "#16a34a" : "#dc2626";
+        }
+        flashCardUpdate(hospitalId);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // Set bed to zero (instant full demo)
+  async function setBedZero(hospitalId, wardType) {
+    try {
+      const res = await fetch(`/api/admin/hospital/${hospitalId}/update-bed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ward_type: wardType, available_beds: 0 })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        const el = document.getElementById(`bedCount-${hospitalId}-${wardType}`);
+        if (el) {
+          el.innerText = `0 Free`;
+          el.style.color = "#dc2626";
+        }
+        flashCardUpdate(hospitalId);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // AJAX updater for crowd level
+  async function updateCrowd(hospitalId, level) {
+    try {
+      const res = await fetch(`/api/admin/hospital/${hospitalId}/update-crowd`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ crowd_level: level })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        const el = document.getElementById(`crowdBadge-${hospitalId}`);
+        if (el) {
+          el.innerText = `${data.crowd_level} Crowd`;
+          if (data.crowd_level === "Critical") {
+            el.style.background = "#fee2e2"; el.style.color = "#b91c1c";
+          } else if (data.crowd_level === "Moderate") {
+            el.style.background = "#fef3c7"; el.style.color = "#b45309";
+          } else {
+            el.style.background = "#dcfce7"; el.style.color = "#15803d";
+          }
+        }
+        flashCardUpdate(hospitalId);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function flashCardUpdate(hospitalId) {
+    const card = document.getElementById(`hospitalCard-${hospitalId}`);
+    if (card) {
+      card.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.6)";
+      card.style.borderColor = "#38bdf8";
+      setTimeout(() => {
+        card.style.boxShadow = "var(--shadow-sm)";
+        card.style.borderColor = "var(--surface-border)";
+      }, 500);
+    }
+  }
+</script>
+{% endblock %}

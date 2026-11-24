@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Outpatient Appointments — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 680px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 800;">📅 Outpatient Appointments</h1>
+      <p style="color: var(--text-muted); font-size: 0.85rem;">Book hospital clinic visits and track your live queue turn.</p>
+    </div>
+    <a href="{{ url_for('app_routes.book_appointment') }}" class="btn btn-primary btn-sm">
+      + Book New Slot
+    </a>
+  </div>
+
+  <!-- Active Bookings / Queue Tokens -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <h3 class="card-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">Your Scheduled Consultations</h3>
+
+    {% if appointments %}
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for appt in appointments %}
+          <div style="background: #f8fafc; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong style="font-size: 1rem; color: #0f172a;">{{ appt.doctor.name }}</strong>
+                <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700;">
+                  Token #{{ appt.queue_token.token_number if appt.queue_token else 'N/A' }}
+                </span>
+              </div>
+              <p style="font-size: 0.82rem; color: #475569; margin: 3px 0 0 0;">
+                {{ appt.doctor.specialization }} • {{ appt.hospital.name }}
+              </p>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+                📅 {{ appt.scheduled_date.strftime('%d %b %Y') }} at {{ appt.scheduled_slot }}
+              </p>
+            </div>
+
+            <div>
+              {% if appt.queue_token and appt.queue_token.status in ['waiting', 'called', 'in_consultation'] %}
+                <a href="{{ url_for('app_routes.live_queue') }}" class="btn btn-sm btn-primary" style="font-weight: 700;">
+                  ⚡ Track Live Turn ➔
+                </a>
+              {% elif appt.queue_token and appt.queue_token.status == 'done' %}
+                <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 700;">
+                  ✓ Completed
+                </span>
+              {% else %}
+                <span class="badge badge-status">{{ appt.status|title }}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted);">
+        <span style="font-size: 2rem;">🗓️</span>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem;">You have no active appointments scheduled.</p>
+        <a href="{{ url_for('app_routes.book_appointment') }}" class="btn btn-outline btn-sm" style="margin-top: 8px;">
+          Find Doctor & Book Slot
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Available Doctors Directory -->
+  <div class="card">
+    <h3 class="card-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">🏥 Duty Physicians Directory</h3>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      {% for doc in doctors %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--surface-border);">
+          <div>
+            <strong style="color: #0f172a;">{{ doc.name }}</strong>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 1px 0 0 0;">
+              {{ doc.specialization }} • {{ doc.hospital.name }}
+            </p>
+            <p style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">
+              ● On Duty • Cabin {{ doc.cabin_number }} • Serving Token #{{ doc.current_token_number }}
+            </p>
+          </div>
+          <a href="{{ url_for('app_routes.book_appointment') }}?doctor_id={{ doc.id }}" class="btn btn-outline btn-sm">
+            Book
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

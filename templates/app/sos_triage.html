@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Emergency Triage Wizard — E-Doot</title>
+  
+  <meta name="theme-color" content="#dc2626">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/emergency.css') }}">
+  <style>
+    .triage-step-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.2rem;
+    }
+    .question-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+      gap: 10px;
+    }
+    .question-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f8fafc;
+      line-height: 1.35;
+    }
+    .voice-btn {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #38bdf8;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .voice-btn:hover { background: #475569; }
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+    }
+    .option-pill {
+      cursor: pointer;
+    }
+    .option-pill input[type="radio"] {
+      display: none;
+    }
+    .option-pill .pill-content {
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      transition: all 0.15s;
+    }
+    .option-pill input[type="radio"]:checked + .pill-content {
+      background: #dc2626;
+      border-color: #ef4444;
+      color: #fff;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    }
+    .triage-disclaimer-box {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 0.8rem;
+      color: #fca5a5;
+      line-height: 1.4;
+      margin-bottom: 1.25rem;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .photo-upload-box {
+      border: 2px dashed #475569;
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+      background: #0f172a;
+      margin-bottom: 1.25rem;
+    }
+  </style>
+</head>
+<body class="emergency-page">
+
+  <div class="emergency-container">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <a href="{{ url_for('emergency_bp.view_emergency_summary', qr_uuid=qr_uuid) }}" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem;">
+        ← Back to Summary
+      </a>
+      <select onchange="window.location.href='/set-language/' + this.value;" style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
+        <option value="en" {% if current_lang == 'en' %}selected{% endif %}>English</option>
+        <option value="hi" {% if current_lang == 'hi' %}selected{% endif %}>हिंदी</option>
+        <option value="mr" {% if current_lang == 'mr' %}selected{% endif %}>मराठी</option>
+      </select>
+    </div>
+
+    <!-- Mandatory Clinical Disclaimer -->
+    <div class="triage-disclaimer-box">
+      <span style="font-size: 1.4rem;">⚖️</span>
+      <div>
+        <strong>Deterministic Routing Protocol:</strong> This triage wizard does NOT provide a medical diagnosis. It mathematically evaluates symptoms to route the patient to an appropriately equipped hospital with available beds.
+      </div>
+    </div>
+
+    <div class="emergency-header" style="text-align: left; margin-bottom: 1rem;">
+      <h1 style="font-size: 1.4rem;">Emergency Triage Assessment</h1>
+      <p style="color: #94a3b8; font-size: 0.82rem;">Answer 6 rapid questions for <strong>{{ patient.full_name }}</strong> (Tap 🔊 for audio prompts)</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('emergency_bp.submit_triage', qr_uuid=qr_uuid) }}" enctype="multipart/form-data">
+      <input type="hidden" name="helper_lat" id="helperLat" value="28.5800">
+      <input type="hidden" name="helper_lng" id="helperLng" value="77.2200">
+
+      <!-- Dynamic Questions -->
+      {% for q in questions %}
+        <div class="triage-step-card">
+          <div class="question-head">
+            <span class="question-title">
+              <span style="color: #ef4444; font-weight: 800;">Q{{ loop.index }}.</span> 
+              {{ q.question[current_lang] if q.question[current_lang] is defined else q.question['en'] }}
+            </span>
+            <button 
+              type="button" 
+              class="voice-btn" 
+              onclick="speakPrompt('{{ q.question[current_lang] if q.question[current_lang] is defined else q.question['en'] }}', '{{ current_lang }}')"
+              title="Read Question Aloud"
+            >
+              🔊 Audio
+            </button>
+          </div>
+
+          <div class="options-grid">
+            {% for opt in q.options %}
+              <label class="option-pill">
+                <input 
+                  type="radio" 
+                  name="{{ q.key }}" 
+                  value="{{ opt.value }}" 
+                  {% if opt.value == q.default %}checked{% endif %}
+                >
+                <div class="pill-content">
+                  {{ opt.label[current_lang] if opt.label[current_lang] is defined else opt.label['en'] }}
+                </div>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+
+      <!-- Optional Injury Photo Upload -->
+      <div class="triage-step-card">
+        <div class="question-head">
+          <span class="question-title">📷 Optional Injury Photo (Helps ER Team Prepare)</span>
+        </div>
+        <div class="photo-upload-box">
+          <input 
+            type="file" 
+            name="injury_photo" 
+            id="injuryPhotoInput" 
+            accept="image/*" 
+            capture="environment" 
+            style="color: #94a3b8; font-size: 0.85rem;"
+            onchange="previewInjuryPhoto(this)"
+          >
+          <div id="photoPreviewContainer" style="display: none; margin-top: 10px;">
+            <img id="photoPreviewImg" style="max-width: 100%; max-height: 180px; border-radius: 8px; border: 1px solid #475569;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Helper Phone (Optional) -->
+      <div class="triage-step-card">
+        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">
+          Your Mobile Phone (Optional — Shared with family for coordination)
+        </label>
+        <input 
+          type="tel" 
+          name="helper_phone" 
+          placeholder="e.g. 9876543210" 
+          class="form-control" 
+          style="background: #0f172a; border-color: #334155; color: #fff;"
+        >
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="sos-hero-btn" style="margin-top: 1rem;">
+        <span>🔍</span>
+        <span>Evaluate Triage & Rank Hospitals</span>
+        <span>➔</span>
+      </button>
+    </form>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/emergency_flow.js') }}"></script>
+  <script>
+    // Capture user's GPS coordinates if available
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        document.getElementById("helperLat").value = pos.coords.latitude;
+        document.getElementById("helperLng").value = pos.coords.longitude;
+      }, () => {});
+    }
+
+    // Photo preview
+    function previewInjuryPhoto(input) {
+      const container = document.getElementById("photoPreviewContainer");
+      const img = document.getElementById("photoPreviewImg");
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          img.src = e.target.result;
+          container.style.display = "block";
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+  </script>
+</body>
+</html>

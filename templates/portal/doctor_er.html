@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Department (ED) Live Pre-Alerts — E-Doot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge badge-blood">Trauma Bay Live</span>
+        <span style="font-size: 0.85rem; color: #16a34a; font-weight: 700;">● Real-time Pre-Alert Feed</span>
+      </div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; margin-top: 4px;">
+        🚨 Emergency Department Live Board
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">
+        Facility: <strong>{{ hospital.name }}</strong> • Trauma Lead: <strong>{{ doctor.name }}</strong>
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button id="toggleAudioChimeBtn" class="btn btn-outline btn-sm" onclick="toggleAudioChime()">
+        🔊 Emergency Siren: ON
+      </button>
+      <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline btn-sm">← Portal Home</a>
+    </div>
+  </div>
+
+  <!-- Active Pre-Alerts Stream -->
+  <div id="erPreAlertsList">
+    {% if pre_alerts %}
+      {% for event in pre_alerts %}
+        <div class="card" style="border: 2px solid {% if event.status == 'accepted' %}#16a34a{% else %}#ef4444{% endif %}; background: #fff; margin-bottom: 1.5rem; box-shadow: var(--shadow-md);">
+          <!-- Pre-Alert Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-border); padding-bottom: 12px; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.5rem;">🚑</span>
+              <div>
+                <span class="badge" style="background: #fee2e2; color: #b91c1c; font-weight: 800;">
+                  {{ event.triage_category|upper }} EMERGENCY
+                </span>
+                <span style="font-size: 0.78rem; color: var(--text-muted); margin-left: 8px;">
+                  Event Token: <code>{{ event.event_token[:8] }}</code>
+                </span>
+              </div>
+            </div>
+
+            <div style="text-align: right;">
+              <span class="badge" style="background: {% if event.status == 'accepted' %}#dcfce7; color: #15803d;{% else %}#fef3c7; color: #b45309;{% endif %} font-size: 0.82rem; padding: 5px 12px;">
+                {% if event.status == 'accepted' %}
+                  ✓ Bed Held & Team Ready
+                {% else %}
+                  ⏳ In Transit — ETA ~{{ event.eta_minutes }} Mins
+                {% endif %}
+              </span>
+            </div>
+          </div>
+
+          <!-- Patient & Clinical Details Grid -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: flex-start;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="font-size: 1.3rem; font-weight: 800; color: #0f172a;">
+                  {{ event.patient.full_name if event.patient else 'Unidentified Patient' }}
+                </h3>
+                <span class="blood-pill" style="border: 1px solid #fca5a5;">
+                  {{ event.patient.patient_profile.blood_group if event.patient and event.patient.patient_profile else 'Unknown' }}
+                </span>
+              </div>
+
+              <div style="font-size: 0.88rem; color: #334155; line-height: 1.5;">
+                <p>
+                  <strong>⚠️ Critical Allergies:</strong> 
+                  <span style="color: #dc2626; font-weight: 700;">
+                    {{ event.patient.patient_profile.allergies if event.patient and event.patient.patient_profile else 'None recorded' }}
+                  </span>
+                </p>
+                <p>
+                  <strong>🩺 Existing Conditions:</strong> 
+                  {{ event.patient.patient_profile.chronic_conditions if event.patient and event.patient.patient_profile else 'None recorded' }}
+                </p>
+                <p>
+                  <strong>💊 Active Medications:</strong> 
+                  {{ event.patient.patient_profile.current_medications if event.patient and event.patient.patient_profile else 'None recorded' }}
+                </p>
+                <p style="margin-top: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Assisted by Bystander: <strong>{{ event.helper_name }}</strong> (Phone: {{ event.helper_phone or 'Not provided' }})
+                </p>
+              </div>
+            </div>
+
+            <!-- Optional Injury Photo -->
+            <div style="text-align: center; background: #f8fafc; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); padding: 10px;">
+              <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                Injury Field Photo
+              </span>
+              {% if event.photo_filename %}
+                <div style="margin-top: 6px;">
+                  <a href="{{ url_for('static', filename='uploads/' + event.photo_filename) }}" target="_blank">
+                    <img src="{{ url_for('static', filename='uploads/' + event.photo_filename) }}" alt="Injury Field Photo" style="max-width: 100%; max-height: 110px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                  </a>
+                </div>
+              {% else %}
+                <div style="color: #94a3b8; font-size: 0.8rem; padding: 25px 0;">
+                  No field photo uploaded
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div style="display: flex; gap: 10px; margin-top: 1.25rem; padding-top: 12px; border-top: 1px solid var(--surface-border); justify-content: flex-end;">
+            {% if event.status != 'accepted' %}
+              <!-- Accept Pre-Alert -->
+              <form method="POST" action="{{ url_for('portal.er_pre_alert_action', event_id=event.id) }}">
+                <input type="hidden" name="action" value="accept">
+                <button type="submit" class="btn btn-sm btn-primary" style="background: #16a34a; border-color: #15803d; font-weight: 700;">
+                  ✓ Accept & Prepare Trauma Team
+                </button>
+              </form>
+
+              <!-- Redirect Form -->
+              <form method="POST" action="{{ url_for('portal.er_pre_alert_action', event_id=event.id) }}" style="display: inline-flex; gap: 6px;">
+                <input type="hidden" name="action" value="redirect">
+                <input 
+                  type="text" 
+                  name="reason" 
+                  placeholder="Redirect reason (e.g. ICU full)" 
+                  class="form-control" 
+                  style="width: 200px; padding: 4px 8px; font-size: 0.8rem;"
+                  required
+                >
+                <button type="submit" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fca5a5;">
+                  Redirect Patient
+                </button>
+              </form>
+            {% else %}
+              <div style="font-size: 0.85rem; color: #16a34a; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                ✓ Pre-alert accepted. Critical care bay prepped for arrival.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card" style="text-align: center; padding: 3rem 1rem;">
+        <span style="font-size: 2.5rem;">🟢</span>
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-top: 0.5rem;">No Active Incoming Pre-Alerts</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 450px; margin: 0.5rem auto 1.5rem auto;">
+          The Emergency Department feed is clear. When a bystander triggers SOS and selects this facility, the live alert will ping here immediately.
+        </p>
+        <a href="{{ url_for('emergency_bp.view_emergency_summary', qr_uuid='rahul-qr-demo-token-101') }}" target="_blank" class="btn btn-sm btn-danger">
+          🚨 Trigger Sample Emergency SOS in New Tab
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  let chimeEnabled = true;
+
+  function toggleAudioChime() {
+    chimeEnabled = !chimeEnabled;
+    const btn = document.getElementById("toggleAudioChimeBtn");
+    btn.innerText = chimeEnabled ? "🔊 Emergency Siren: ON" : "🔇 Emergency Siren: OFF";
+  }
+
+  // Auto-refresh board every 4 seconds for live dispatch updates
+  setInterval(() => {
+    // Only reload if not typing in form
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.tagName === "INPUT") return;
+    window.location.reload();
+  }, 5000);
+</script>
+{% endblock %}
